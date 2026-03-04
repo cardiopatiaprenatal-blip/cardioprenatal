@@ -27,6 +27,10 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('dashboard');
 
     Route::resource('gestantes', GestanteController::class);
+
+    // Rotas de Consulta
     Route::get('/consultas/import', [ConsultaController::class, 'index'])->name('consultas.import');
-    Route::resource('consultas/{id}', ConsultaController::class)->names('consultas');
+    Route::post('/consultas/import', [ConsultaController::class, 'import'])->name('consultas.import.store');
+    Route::get('/consultas/create/{id}', [ConsultaController::class, 'create'])->name('consultas.create');
+    Route::post('/consultas/{id}', [ConsultaController::class, 'store'])->name('consultas.store');
 });

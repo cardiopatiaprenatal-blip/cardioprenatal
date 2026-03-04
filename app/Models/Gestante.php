@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class Gestante extends Model
 {
     protected $fillable = [
-        'nome',
         'gestante_id',
         'data_nascimento',
         'idade',

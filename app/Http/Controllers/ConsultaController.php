@@ -14,13 +14,69 @@ class ConsultaController extends Controller
 
         return view('consultas.import');
     }
-
-    public function store(Request $request)
+    private function storeFromForm(Request $request, $id)
     {
-        $request->validate([
-            'csv' => 'required|file|mimes:csv,txt'
+        // 1. Validar todos os campos do formulário
+        $validatedData = $request->validate([
+            'data_consulta' => 'required|date',
+            'idade' => 'required|integer',
+            'idade_gestacional' => 'required|integer',
+            'altura' => 'nullable|numeric',
+            'peso' => 'nullable|numeric',
+            'pressao_sistolica' => 'nullable|integer',
+            'diabetes_gestacional' => 'required|boolean',
+            'obesidade_pre_gestacional' => 'required|boolean',
+            'bpm_materno' => 'nullable|integer',
+            'saturacao' => 'nullable|integer',
+            'temperatura_corporal' => 'nullable|numeric',
+            'glicemia_jejum' => 'nullable|numeric',
+            'glicemia_pos_prandial' => 'nullable|numeric',
+            'hba1c' => 'nullable|numeric',
+            'frequencia_cardiaca_fetal' => 'nullable|integer',
+            'circunferencia_cefalica_fetal_mm' => 'nullable|numeric',
+            'circunferencia_abdominal_mm' => 'nullable|numeric',
+            'comprimento_femur_mm' => 'nullable|numeric',
+            'translucencia_nucal_mm' => 'nullable|numeric',
+            'doppler_ducto_venoso' => 'nullable|string|max:255',
+            'eixo_cardiaco' => 'nullable|string|max:255',
+            'quatro_camaras' => 'nullable|string|max:255',
+            'chd_confirmada' => 'required|boolean',
+            'tipo_chd' => 'nullable|string|max:255',
+            
         ]);
 
+        // 2. Adicionar o ID da gestante para o salvamento
+        $validatedData['gestante_id'] = $id;
+
+        // Adicionar o número da consulta
+        $ultimoNumero = Consulta::where('gestante_id', $id)->max('consulta_numero');
+        $validatedData['consulta_numero'] = ($ultimoNumero ?? 0) + 1;
+
+        // 3. Criar a consulta usando atribuição em massa
+        Consulta::create($validatedData);
+
+        // 4. Redirecionar para a página de detalhes da gestante
+        return redirect()->route('gestantes.show', $id)->with('success', 'Consulta salva com sucesso!');
+    }
+    
+    public function store(Request $request, $id)
+    {
+        // Lógica para salvar uma nova consulta a partir do formulário
+        return $this->storeFromForm($request, $id);
+    }
+
+    public function import(Request $request)
+    {
+        if (!$request->hasFile('csv')) {
+            return response()->json(['message' => 'Nenhum arquivo CSV enviado.'], 400);
+        }
+
+        return $this->importCsv($request);
+    }
+
+    private function importCsv(Request $request)
+    {
+        $request->validate(['csv' => 'required|file|mimes:csv,txt']);
         set_time_limit(0);
 
         $file = $request->file('csv');
@@ -35,7 +91,6 @@ class ConsultaController extends Controller
         try {
             $header = fgetcsv($handle, 0, ';');
 
-            $gestantesCache = [];
             $batch = [];
 
             while (($row = fgetcsv($handle, 0, ';')) !== false) {
@@ -68,7 +123,7 @@ class ConsultaController extends Controller
      */
                 $gestante = Gestante::firstOrCreate(
                     [
-                        'nome' => $data['nome'],
+                        'gestante_id' => $data['gestante_id'],
                     ]
                 );
 
@@ -94,6 +149,9 @@ class ConsultaController extends Controller
                         'temperatura_corporal' => $data['temperatura_corporal'],
                         'altura' => $data['altura'],
                         'peso' => $data['peso'],
+                        'glicemia_jejum' => $data['glicemia_jejum'] ?? null,
+                        'glicemia_pos_prandial' => $data['glicemia_pos_prandial'] ?? null,
+                        'hba1c' => $data['hba1c'] ?? null,
 
                         'diabetes_gestacional' => $data['diabetes_gestacional'],
                         'hipertensao' => $data['hipertensao'],
@@ -120,11 +178,6 @@ class ConsultaController extends Controller
                 );
             }
 
-
-            if ($batch) {
-                Consulta::insert($batch);
-            }
-
             DB::commit();
 
             return response()->json([
@@ -145,12 +198,11 @@ class ConsultaController extends Controller
 
     public function create($id)
     {
+        // 1. Encontrar a gestante pelo ID recebido na rota.
+        $gestante = Gestante::findOrFail($id);
 
-
-
-        return view('consultas.create', compact([
-            'id'
-            ]));
+        // 2. Passar o objeto 'gestante' para a view.
+        return view('consultas.create', compact('gestante'));
     }
 
     public function show($id)

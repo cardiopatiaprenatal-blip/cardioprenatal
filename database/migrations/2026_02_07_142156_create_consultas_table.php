@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('gestante_id')
                 ->constrained('gestantes')
                 ->cascadeOnDelete();
-            $table->string('nome');
 
             $table->integer('consulta_numero');
             $table->date('data_consulta');
@@ -31,6 +30,10 @@ return new class extends Migration
 
             $table->integer('altura');
             $table->decimal('peso', 5, 2);
+
+            $table->decimal('glicemia_jejum', 5, 2)->nullable();
+            $table->decimal('glicemia_pos_prandial', 5, 2)->nullable();
+            $table->decimal('hba1c', 4, 2)->nullable();
 
             $table->boolean('diabetes_gestacional');
             $table->boolean('hipertensao');

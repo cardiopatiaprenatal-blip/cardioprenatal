@@ -21,30 +21,56 @@
         <table class="w-full text-sm border-collapse">
             <thead>
                 <tr class="border-b text-left text-gray-500">
-                    <th class="py-2">Nome</th>
+                    <th class="py-2">Gestante ID</th>
                     <th class="py-2">Consultas</th>
                     <th class="py-2 text-right">Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                @forelse ($gestantes as $gestante)
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="py-2">{{ $gestante->nome }}</td>
-                        <td class="py-2">{{ $gestante->consultas_count }}</td>
-                        <td class="py-2 text-right">
-                            <a href="{{ route('gestantes.show', $gestante) }}" class="text-blue-600 hover:underline">
-                                Ver detalhes
-                            </a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="py-4 text-center text-gray-500">
-                            Nenhuma gestante encontrada
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
+          <tbody>
+    @forelse ($gestantes as $gestante)
+        <tr class="border-b hover:bg-gray-50">
+            <td class="py-2">{{ $gestante->gestante_id }}</td>
+            <td class="py-2">{{ $gestante->consultas_count }}</td>
+
+            <td class="py-2 text-right">
+                <div class="flex justify-end gap-3">
+
+                    <!-- Ver Detalhes -->
+                  <a href="{{ route('gestantes.show', $gestante) }}"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm shadow-sm transition">
+                        Ver detalhes
+                    </a>
+
+                    <!-- Editar -->
+                    <a href="{{ route('gestantes.edit', $gestante) }}"
+                       class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
+                        Editar
+                    </a>
+
+                    <!-- Excluir -->
+                    <form action="{{ route('gestantes.destroy', $gestante) }}"
+                          method="POST"
+                          onsubmit="return confirm('Tem certeza que deseja excluir esta gestante?')">
+                        @csrf
+                        @method('DELETE')
+
+                        <button type="submit"
+                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm">
+                            Excluir
+                        </button>
+                    </form>
+
+                </div>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="3" class="py-4 text-center text-gray-500">
+                Nenhuma gestante encontrada
+            </td>
+        </tr>
+    @endforelse
+</tbody>
         </table>
     </div>
 @endsection

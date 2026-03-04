@@ -9,7 +9,7 @@ class GestanteController extends Controller
 {
     public function index()
     {
-        $gestantes = Gestante::withCount('consultas')->orderBy('nome')->get();
+        $gestantes = Gestante::withCount('consultas')->orderBy('gestante_id')->get();
 
         return view('gestantes.index', compact('gestantes'));
     }
@@ -22,12 +22,13 @@ class GestanteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nome' => 'required|string|max:255',
-            // 'gestante_id' => 'nullable|unique:gestantes,gestante_id',
-            'data_nascimento' => 'required|date'
+            'gestante_id' => 'required',
+            'data_nascimento' => 'required|date',
+            'idade' => 'nullable|integer|min:0',
         ]);
 
-        Gestante::create($request->only('nome', 'data_nascimento'));
+        // Usar request->all() é seguro aqui por causa da propriedade $fillable no Model Gestante
+        Gestante::create($request->all());
 
         return redirect()->route('gestantes.index')->with('success', 'Gestante cadastrada com sucesso!');
     }

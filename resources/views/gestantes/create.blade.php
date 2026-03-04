@@ -20,19 +20,17 @@
                 </div>
             @endif
 
-            <div class="mb-4">
-                <label for="nome" class="block text-gray-700 font-bold mb-2">Nome:</label>
-                <input type="text" name="nome" id="nome" class="w-full border border-gray-300 rounded-lg p-2" required>
-            </div>
-{{--
+     
+
             <div class="mb-4">
                 <label for="gestante_id" class="block text-gray-700 font-bold mb-2">Gestante ID:</label>
-                <input type="text" name="gestante_id" id="gestante_id" class="w-full border border-gray-300 rounded-lg p-2" required>
-            </div> --}}
+                <input type="text" name="gestante_id" id="gestante_id" class="w-full border border-gray-300 rounded-lg p-2" required value="{{ old('gestante_id') }}">
+            </div>
+
 
             <div class="mb-4">
                 <label for="data_nascimento" class="block text-gray-700 font-bold mb-2">Data de Nascimento:</label>
-                <input type="date" name="data_nascimento" id="data_nascimento" class="w-full border border-gray-300 rounded-lg p-2" required>
+                <input type="date" name="data_nascimento" id="data_nascimento" class="w-full border border-gray-300 rounded-lg p-2" required value="{{ old('data_nascimento') }}">
             </div>
 
 

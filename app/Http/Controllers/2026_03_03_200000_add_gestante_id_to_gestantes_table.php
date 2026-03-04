@@ -11,24 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gestantes', function (Blueprint $table) {
-            $table->id();
-
-            $table->string('gestante_id')->nullable();
-
-            $table->date('data_nascimento')->nullable();
-
-            $table->timestamps();
+        Schema::table('gestantes', function (Blueprint $table) {
+            $table->string('gestante_id')->after('id');
         });
     }
-
-
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('gestantes');
+        Schema::table('gestantes', function (Blueprint $table) {
+            $table->dropColumn('gestante_id');
+        });
     }
 };

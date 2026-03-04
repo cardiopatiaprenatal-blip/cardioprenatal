@@ -11,7 +11,6 @@ class Consulta extends Model
 
     protected $fillable = [
         'gestante_id',
-        'nome',
         'consulta_numero',
         'data_consulta',
         'idade',
@@ -22,6 +21,9 @@ class Consulta extends Model
         'temperatura_corporal',
         'altura',
         'peso',
+        'glicemia_jejum',
+        'glicemia_pos_prandial',
+        'hba1c',
         'diabetes_gestacional',
         'hipertensao',
         'hipertensao_pre_eclampsia',

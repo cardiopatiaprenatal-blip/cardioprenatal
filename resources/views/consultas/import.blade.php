@@ -38,7 +38,7 @@
             feedback.classList.add('hidden');
 
             try {
-                const response = await fetch("{{ route('consultas.store') }}", {
+                const response = await fetch("{{ route('consultas.import.store') }}", {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content

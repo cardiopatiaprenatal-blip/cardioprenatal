@@ -24,7 +24,6 @@ class GestanteController extends Controller
         $request->validate([
             'gestante_id' => 'required',
             'data_nascimento' => 'required|date',
-            'idade' => 'nullable|integer|min:0',
         ]);
 
         // Usar request->all() é seguro aqui por causa da propriedade $fillable no Model Gestante
@@ -44,16 +43,34 @@ class GestanteController extends Controller
 
     public function edit($id)
     {
-        //
+        $gestante = Gestante::findOrFail($id);
+        return view('gestantes.edit', compact('gestante'));
+
     }
 
     public function update(Request $request, $id)
     {
-        //
+         $gestante = Gestante::findOrFail($id);
+
+            $request->validate([
+                'gestante_id' => 'required',
+                'data_nascimento' => 'required|date',
+            ]);
+
+            $gestante->update($request->all());
+
+            return redirect()->route('gestantes.index')
+                ->with('success', 'Gestante atualizada com sucesso!');
     }
 
     public function destroy($id)
     {
         //
+         $gestante = Gestante::findOrFail($id);
+
+         $gestante->delete();
+
+          return redirect()->route('gestantes.index')
+        ->with('success', 'Gestante excluída com sucesso!');
     }
 }

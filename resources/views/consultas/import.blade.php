@@ -33,29 +33,41 @@
             e.preventDefault();
 
             const formData = new FormData(this);
-            const feedback = document.getElementById('feedback');
+            const feedbackDiv = document.getElementById('feedback');
+            const submitButton = e.target.querySelector('button[type="submit"]');
 
-            feedback.classList.add('hidden');
+            feedbackDiv.classList.add('hidden');
+            submitButton.disabled = true;
+            submitButton.innerText = 'Importando...';
 
             try {
                 const response = await fetch("{{ route('consultas.import.store') }}", {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
                     },
                     body: formData
                 });
 
-                const data = await response.json();
-
-                feedback.classList.remove('hidden');
-                feedback.className = 'mt-4 text-sm text-green-600';
-                feedback.innerText = data.message;
+                if (response.ok) {
+                    // Redireciona para a lista de gestantes em caso de sucesso.
+                    window.location.href = "{{ route('gestantes.index') }}";
+                } else {
+                    const data = await response.json();
+                    feedbackDiv.innerText = (data.message || 'Ocorreu um erro.') + (data.error ? ' Detalhes: ' + data.error : '');
+                    feedbackDiv.className = 'mt-4 text-sm text-red-600';
+                    feedbackDiv.classList.remove('hidden');
+                    submitButton.disabled = false;
+                    submitButton.innerText = 'Importar CSV';
+                }
 
             } catch (error) {
-                feedback.classList.remove('hidden');
-                feedback.className = 'mt-4 text-sm text-red-600';
-                feedback.innerText = 'Erro ao importar o arquivo';
+                feedbackDiv.innerText = 'Erro de conexão ou ao processar o arquivo.';
+                feedbackDiv.className = 'mt-4 text-sm text-red-600';
+                feedbackDiv.classList.remove('hidden');
+                submitButton.disabled = false;
+                submitButton.innerText = 'Importar CSV';
             }
         });
     </script>

@@ -15,6 +15,12 @@
                         Gestante {{ $gestante->gestante_id }}
                     </h2>
                     <p class="text-gray-500 text-sm mt-1">
+                        Data de Nascimento:
+                        <span class="font-semibold text-gray-700">
+                            {{ $gestante->data_nascimento ? \Carbon\Carbon::parse($gestante->data_nascimento)->format('d/m/Y') : 'Não informada' }}
+                        </span>
+                    </p>
+                    <p class="text-gray-500 text-sm mt-1">
                         Total de consultas: 
                         <span class="font-semibold text-gray-700">
                             {{ $gestante->consultas->count() }}
@@ -34,24 +40,21 @@
             <div class="bg-white shadow-md hover:shadow-lg transition rounded-2xl p-8 space-y-8">
 
                 <!-- Cabeçalho da consulta -->
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-blue-600">
-                            Consulta nº {{ $consulta->consulta_numero }}
-                        </h3>
-                        <p class="text-sm text-gray-500">
-                            {{ $consulta->data_consulta->format('d/m/Y') }}
-                        </p>
-                    </div>
+                 <div class="flex items-center gap-3">
 
-                    <span class="px-4 py-1.5 rounded-full text-xs font-semibold
-                        {{ $consulta->chd_confirmada 
-                            ? 'bg-red-100 text-red-700' 
-                            : 'bg-green-100 text-green-700' }}">
-                        CHD {{ $consulta->chd_confirmada ? 'Confirmada' : 'Não confirmada' }}
-                    </span>
+                            <span class="px-4 py-1.5 rounded-full text-xs font-semibold
+                                {{ $consulta->chd_confirmada 
+                                    ? 'bg-red-100 text-red-700' 
+                                    : 'bg-green-100 text-green-700' }}">
+                                CHD {{ $consulta->chd_confirmada ? 'Confirmada' : 'Não confirmada' }}
+                            </span>
+
+                            <a href="{{ url('consultas/' . $consulta->id . '/edit') }}"
+                            class="px-4 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition">
+                                Editar
+                            </a>
+
                 </div>
-
                 <!-- Grid principal -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -59,13 +62,17 @@
                     @php
                         $card = "bg-gray-50 border p-5 rounded-xl space-y-4";
                         $title = "text-xs font-semibold text-gray-500 uppercase tracking-wider";
+                        $idade = null;
+                        if ($gestante->data_nascimento && $consulta->data_consulta) {
+                            $idade = \Carbon\Carbon::parse($consulta->data_consulta)->diffInYears(\Carbon\Carbon::parse($gestante->data_nascimento));
+                        }
                     @endphp
 
                     <!-- Dados da Gestante -->
                     <div class="{{ $card }}">
                         <h4 class="{{ $title }}">Dados da Gestante</h4>
                         <div class="grid grid-cols-2 gap-4 text-sm">
-                            <p><span class="text-gray-400">Idade</span><br><strong>{{ $consulta->idade }} anos</strong></p>
+                            <p><span class="text-gray-400">Idade na consulta</span><br><strong>{{ $idade !== null ? $idade . ' anos' : 'N/A' }}</strong></p>
                             <p><span class="text-gray-400">Idade Gestacional</span><br><strong>{{ $consulta->idade_gestacional }} sem</strong></p>
                             <p><span class="text-gray-400">Altura</span><br><strong>{{ $consulta->altura }} cm</strong></p>
                             <p><span class="text-gray-400">Peso</span><br><strong>{{ $consulta->peso }} kg</strong></p>

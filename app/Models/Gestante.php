@@ -9,7 +9,6 @@ class Gestante extends Model
     protected $fillable = [
         'gestante_id',
         'data_nascimento',
-        'idade',
     ];
 
     public function consultas()

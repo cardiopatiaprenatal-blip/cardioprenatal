@@ -13,7 +13,6 @@ class Consulta extends Model
         'gestante_id',
         'consulta_numero',
         'data_consulta',
-        'idade',
         'idade_gestacional',
         'pressao_sistolica',
         'bpm_materno',

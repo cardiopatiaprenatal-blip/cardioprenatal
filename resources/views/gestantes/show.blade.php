@@ -35,6 +35,24 @@
             </div>
         </div>
 
+        <!-- Seção de Análise da IA (aparece após clicar no botão) -->
+        @if (session('resultado_analise_ia') && is_array(session('resultado_analise_ia')))
+            @php $resultado_ia = session('resultado_analise_ia'); @endphp
+            <div class="bg-white shadow-lg rounded-2xl p-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Dashboard da Análise de IA</h3>
+                @if (!empty($resultado_ia['imagens']))
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach ($resultado_ia['imagens'] as $titulo => $imagem_base64)
+                            <div class="bg-gray-50 p-4 rounded-xl border">
+                                <h4 class="font-semibold text-center mb-2 capitalize">{{ str_replace('_', ' ', $titulo) }}</h4>
+                                <img src="{{ $imagem_base64 }}" alt="Gráfico de {{ $titulo }}">
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endif
+
         <!-- Consultas -->
         @forelse ($gestante->consultas as $consulta)
             <div class="bg-white shadow-md hover:shadow-lg transition rounded-2xl p-8 space-y-8">
@@ -49,6 +67,7 @@
                                 CHD {{ $consulta->chd_confirmada ? 'Confirmada' : 'Não confirmada' }}
                             </span>
 
+                            <!-- Botão Editar -->
                             <a href="{{ url('consultas/' . $consulta->id . '/edit') }}"
                             class="px-4 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition">
                                 Editar

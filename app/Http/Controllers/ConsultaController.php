@@ -6,6 +6,7 @@ use App\Models\Consulta;
 use App\Models\Gestante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\Process\Process;
 
 class ConsultaController extends Controller
 {

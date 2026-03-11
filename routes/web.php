@@ -26,6 +26,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    Route::post('/dashboard/analisar', [DashboardController::class, 'analisar'])
+        ->name('dashboard.analisar');
+
+    Route::get('/dashboard/verificar-analise', [DashboardController::class, 'verificarAnalise'])
+        ->name('dashboard.verificarAnalise');
+
     Route::resource('gestantes', GestanteController::class);
 
     // Rotas de Consulta

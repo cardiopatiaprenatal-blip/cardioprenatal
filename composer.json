@@ -13,7 +13,8 @@
         "doctrine/dbal": "^4.4",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "laravellegends/pt-br-validator": "^12.2"
+        "laravellegends/pt-br-validator": "^12.2",
+        "symfony/process": "^7.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

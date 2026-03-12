@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestanteController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnaliseController;
 
 Route::get('/', function () {
 
@@ -15,10 +16,6 @@ Route::get('/', function () {
 
     return view('auth.login');
 })->name('login');
-
-
-Route::post('login', [AuthController::class, 'login'])->name('auth');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // ROTAS PROTEGIDAS POR LOGIN
 Route::group(['middleware' => 'auth'], function () {
@@ -39,4 +36,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/consultas/import', [ConsultaController::class, 'import'])->name('consultas.import.store');
     Route::get('/consultas/create/{id}', [ConsultaController::class, 'create'])->name('consultas.create');
     Route::post('/consultas/{id}', [ConsultaController::class, 'store'])->name('consultas.store');
+
 });
+
+    Route::post('/analise', [AnaliseController::class, 'iniciarAnalise']);
+    Route::get('/analise/status', [AnaliseController::class, 'verificarStatus']);
+    Route::get('/analise/resultado', [AnaliseController::class, 'obterResultado']);

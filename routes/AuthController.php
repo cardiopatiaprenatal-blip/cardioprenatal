@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -34,13 +34,7 @@ class AuthController extends Controller
         }
 
         // 3. Tenta autenticar com as credenciais
-        $auth = Auth::attempt([
-            'crm' => $crm,
-            'password' => $request->password
-        ]);
-
-        // 4. Se a autenticação falhar (senha incorreta), retorna erro 401
-        if (!$auth) {
+        if (!auth()->attempt($request->only('crm', 'password'))) {
             return response()->json(['message' => 'Senha inválida.'], 401);
         }
         $token = $user->createToken('auth_token')->plainTextToken;

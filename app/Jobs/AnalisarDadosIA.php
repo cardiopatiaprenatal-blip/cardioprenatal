@@ -47,6 +47,9 @@ class AnalisarDadosIA implements ShouldQueue
             Log::info('Buscando consultas no banco.');
 
             $todasAsConsultas = Consulta::with('gestante')->get();
+                        Log::info('Consultas retornadas', [
+                'total' => $todasAsConsultas->count()
+            ]);
 
             Log::info('Consultas carregadas.', [
                 'quantidade' => $todasAsConsultas->count()

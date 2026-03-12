@@ -6,19 +6,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestanteController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/', function () {
-
-    if (Auth::check()) {
-        return redirect()->route('dashboard');
-    }
-
-    return view('auth.login');
-})->name('login');
+use App\Http\Controllers\LoginController;
 
 
-Route::post('login', [AuthController::class, 'login'])->name('auth');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/', [LoginController::class, 'create'])->name('login')->middleware('guest'); // exibe o form
+Route::post('/login', [LoginController::class, 'store'])->name('login.store'); // envia form
+Route::post('/logout', [LoginController::class, 'destroy'])->name('logout'); // logout
+
+
 
 // ROTAS PROTEGIDAS POR LOGIN
 Route::group(['middleware' => 'auth'], function () {

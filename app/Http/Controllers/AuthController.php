@@ -3,45 +3,55 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User; // Assuming you have a User model
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'crm' => ['required', 'string', 'min:4', 'max:20'],
             'password' => ['required', 'string'],
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['errors' => $validator->errors()], 422);
         }
-
 
         $crm = strtoupper(trim($request->crm));
-        $auth = Auth::attempt([
-            'crm' => $crm,
-            'password' => $request->password
-        ]);
+        if (Auth::attempt(['crm' => $crm, 'password' => $request->password])) {
+            $user = Auth::user();
+            $token = $user->remember_token ?? Str::random(60);
+            $user->remember_token = $token;
+            $user->save();
 
-        if ($auth) {
-            $request->session()->regenerate();
-            return response()->json(['message' => 'Login successful']);
+            return response()->json(['token' => $token], 200);
+        } else {
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
-        return response()->json([
-            'message' => 'CRM ou senha inválidos'
-        ], 401);
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
-        Auth::logout();
+        $token = $request->bearerToken();
 
-        return redirect('/');
+        if ($token) {
+            $user = User::where('remember_token', $token)->first();
+
+            if ($user) {
+                $user->remember_token = null;
+                $user->save();
+
+                return response()->json(['message' => 'Logged out'], 200);
+            }
+
+            return response()->json(['message' => 'Invalid token'], 400);
+        }
+
+        return response()->json(['message' => 'No token provided'], 400);
     }
+
 }

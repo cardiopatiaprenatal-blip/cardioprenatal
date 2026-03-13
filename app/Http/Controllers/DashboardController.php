@@ -6,12 +6,8 @@ use App\Jobs\AnalisarDadosIA;
 use App\Models\Consulta;
 use App\Models\Gestante;
 use Illuminate\Http\Request;
-<<<<<<< HEAD
 use Illuminate\Support\Facades\Cache;
-use Symfony\Component\Process\Process;
-=======
 use Illuminate\Support\Facades\File;
->>>>>>> salvando-commit
 
 class DashboardController extends Controller
 {
@@ -23,7 +19,7 @@ class DashboardController extends Controller
         $chdConfirmadas = Consulta::where('chd_confirmada', true)->count();
 
         // Lê o arquivo JSON gerado pelo script Python
-        $reportPath = base_path('python_api/output/dashboard_data.json');
+        $reportPath = storage_path('app/analytics/dashboard_data.json'); // Sugestão: usar a pasta storage
         $analyticsData = null;
 
         if (File::exists($reportPath)) {

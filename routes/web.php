@@ -40,3 +40,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/consultas/create/{id}', [ConsultaController::class, 'create'])->name('consultas.create');
     Route::post('/consultas/{id}', [ConsultaController::class, 'store'])->name('consultas.store');
 });
+
+Route::get('/register', [AuthController::class, 'registerIndex'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);

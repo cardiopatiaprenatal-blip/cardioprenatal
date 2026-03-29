@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Analise;
 use App\Models\Consulta;
 use App\Models\Gestante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ConsultaController extends Controller
 {
     public function index()
     {
-
         return view('consultas.import');
     }
+
+    // STORE VIA PREENCHIMENTO MANUAL
     private function storeFromForm(Request $request, $id)
     {
         // 1. Validar todos os campos do formulário
@@ -47,7 +52,7 @@ class ConsultaController extends Controller
             'quatro_camaras' => 'nullable|string|max:255',
             'chd_confirmada' => 'required|boolean',
             'tipo_chd' => 'nullable|string|max:255',
-            
+
         ]);
 
         // 2. Adicionar o ID da gestante para o salvamento
@@ -63,274 +68,236 @@ class ConsultaController extends Controller
         // 4. Redirecionar para a página de detalhes da gestante
         return redirect()->route('gestantes.show', $id)->with('success', 'Consulta salva com sucesso!');
     }
-    
+
+    // STORE VIA PREENCHIMENTO MANUAL
     public function store(Request $request, $id)
     {
         // Lógica para salvar uma nova consulta a partir do formulário
         return $this->storeFromForm($request, $id);
     }
 
+
+
+
+
+
+    // STORE VIA IMPORTAÇÃO CSV
     public function import(Request $request)
     {
         if (!$request->hasFile('csv')) {
             return response()->json(['message' => 'Nenhum arquivo CSV enviado.'], 400);
         }
 
-        return $this->importCsv($request);
+        return $this->importStore($request);
     }
 
-private function importCsv(Request $request)
-{
-    $request->validate([
-        'csv' => 'required|file|mimes:csv,txt'
-    ]);
+    // STORE VIA IMPORTAÇÃO CSV
 
-    set_time_limit(0);
 
-    $file = $request->file('csv');
-    $path = $file->getRealPath();
-
-    // --- Início: Auto-detecção do delimitador ---
-    $file_for_detect = fopen($path, 'r');
-    if (!$file_for_detect) {
-        return response()->json(['message' => 'Erro ao ler arquivo'], 400);
+    private function toBoolean($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
-    $first_line = fgets($file_for_detect);
-    fclose($file_for_detect);
 
-    $delimiters = [';' => substr_count($first_line, ';'), ',' => substr_count($first_line, ',')];
-    $separator = array_search(max($delimiters), $delimiters);
-    // --- Fim: Auto-detecção do delimitador ---
+    public function importStore(Request $request)
+    {
+        // 1. Validar upload
+        $request->validate([
+            'csv' => 'required|file|mimes:csv,txt'
+        ]);
 
-    $handle = fopen($path, 'r');
+        $file = $request->file('csv');
 
-    DB::beginTransaction();
+        // 2. Ler CSV
+        $handle = fopen($file->getRealPath(), 'r');
 
-    try {
-        $header = fgetcsv($handle, 0, $separator);
-        
-        // Remove BOM (Byte Order Mark) do Excel caso exista no primeiro item do cabeçalho
-        if ($header && isset($header[0])) {
-            $header[0] = preg_replace('/[\x{FEFF}]/u', '', $header[0]);
+        $header = fgetcsv($handle);
+
+        // 3. Definir colunas esperadas
+        $colunasEsperadas = [
+            'data_consulta',
+            'gestante_id',
+            'consulta_numero',
+            'idade_gestacional',
+            'altura',
+            'peso',
+            'pressao_sistolica',
+            'diabetes_gestacional',
+            'obesidade_pre_gestacional',
+            'hipertensao',
+            'hipertensao_pre_eclampsia',
+            'historico_familiar_chd',
+            'uso_medicamentos',
+            'tabagismo',
+            'alcoolismo',
+            'bpm_materno',
+            'saturacao',
+            'temperatura_corporal',
+            // 'glicemia_jejum',
+            // 'glicemia_pos_prandial',
+            // 'hba1c',
+            'frequencia_cardiaca_fetal',
+            'circunferencia_cefalica_fetal_mm',
+            'circunferencia_abdominal_mm',
+            'comprimento_femur_mm',
+            'translucencia_nucal_mm',
+            'doppler_ducto_venoso',
+            'eixo_cardiaco',
+            'quatro_camaras',
+            'chd_confirmada',
+            'tipo_chd'
+        ];
+
+        // 4. Validar estrutura do CSV
+        // 4. Validar estrutura do CSV (melhorado)
+        $colunasFaltando = array_diff($colunasEsperadas, $header);
+        $colunasExtras = array_diff($header, $colunasEsperadas);
+
+        if (!empty($colunasFaltando) || !empty($colunasExtras)) {
+
+            return response()->json([
+                'message' => 'Estrutura do CSV inválida.',
+                'error' => [
+                    'faltando' => array_values($colunasFaltando),
+                    'extras' => array_values($colunasExtras)
+                ]
+            ], 422);
         }
-        // Limpar espaços em branco dos cabeçalhos
-        if ($header) {
-            $header = array_map('trim', $header);
-        }
 
-        // Validar se a coluna obrigatória existe
-        if (!$header || !in_array('gestante_id', $header)) {
-            throw new \Exception('A coluna "gestante_id" não foi encontrada. Verifique se o arquivo usa ponto e vírgula (;) ou vírgula (,) como separador.');
-        }
+        $dados = [];
+        $erros = [];
 
-        $rowNumber = 1;
-        while (($row = fgetcsv($handle, 0, $separator)) !== false) {
-            $rowNumber++;
-
-            if (count($header) != count($row)) {
+        // 5. Validar linha a linha
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($header) !== count($row)) {
+                $erros[] = [
+                    'linha_csv' => $numeroLinha ?? null,
+                    'erro' => 'Quantidade de colunas inválida'
+                ];
                 continue;
             }
 
-            $data = array_combine($header, $row);
+            $linha = array_combine($header, $row);
 
-            /*
-            |-----------------------------------
-            | Normalizar vazios
-            |-----------------------------------
-            */
-            foreach ($data as $key => $value) {
-                $data[$key] = $value === '' ? null : $value;
-            }
 
-            /*
-            |-----------------------------------
-            | Decimais
-            |-----------------------------------
-            */
-            $decimals = [
-                'peso',
-                'peso_fetal',
-                'imc',
-                'temperatura_corporal',
-                'glicemia_jejum',
-                'glicemia_pos_prandial',
-                'hba1c'
-            ];
-
-            foreach ($decimals as $field) {
-                if (!empty($data[$field])) {
-                    $data[$field] = str_replace(',', '.', $data[$field]);
-                }
-            }
-
-            /*
-            |-----------------------------------
-            | Inteiros
-            |-----------------------------------
-            */
-            $integers = [
-                'idade_gestacional',
-                'pressao_sistolica',
-                'bpm_materno',
-                'saturacao',
-                'altura',
-                'frequencia_cardiaca_fetal',
-                'circunferencia_cefalica_fetal_mm',
-                'circunferencia_abdominal_mm',
-                'comprimento_femur_mm',
-                'translucencia_nucal_mm',
-                'total_fatores_risco',
-                'num_chd_codigos'
-            ];
-
-            foreach ($integers as $field) {
-                if (!empty($data[$field])) {
-                    $data[$field] = (int) $data[$field];
-                }
-            }
-
-            /*
-            |-----------------------------------
-            | Data
-            |-----------------------------------
-            */
-            if (empty($data['data_consulta'])) {
-                throw new \Exception("A coluna 'data_consulta' não pode ser vazia. Verifique a linha {$rowNumber} do seu arquivo CSV.");
-            }
-
-            // Verifica se é formato brasileiro d/m/Y
-            if (str_contains($data['data_consulta'], '/')) {
-                $data['data_consulta'] = \Carbon\Carbon::createFromFormat('d/m/Y', $data['data_consulta'])->format('Y-m-d');
-            } else {
-                $data['data_consulta'] = date('Y-m-d', strtotime($data['data_consulta']));
-            }
-
-            /*
-            |-----------------------------------
-            | Boolean
-            |-----------------------------------
-            */
-            $booleans = [
+            // 👇 CONVERTE AQUI (ANTES DO VALIDATE)
+            $camposBooleanos = [
                 'diabetes_gestacional',
+                'obesidade_pre_gestacional',
                 'hipertensao',
                 'hipertensao_pre_eclampsia',
-                'obesidade_pre_gestacional',
                 'historico_familiar_chd',
                 'uso_medicamentos',
                 'tabagismo',
                 'alcoolismo',
-                'alteracao_estrutural',
                 'chd_confirmada'
             ];
 
-            foreach ($booleans as $field) {
+            foreach ($camposBooleanos as $campo) {
+                if (isset($linha[$campo])) {
+                    $valor = strtolower(trim($linha[$campo]));
 
-                if (isset($data[$field])) {
-
-                    $data[$field] = filter_var(
-                        $data[$field],
-                        FILTER_VALIDATE_BOOLEAN,
-                        FILTER_NULL_ON_FAILURE
-                    );
-
-                    $data[$field] = $data[$field] ?? false;
+                    if (in_array($valor, ['1', 'true'])) {
+                        $linha[$campo] = true;
+                    } elseif (in_array($valor, ['0', 'false'])) {
+                        $linha[$campo] = false;
+                    } else {
+                        $linha[$campo] = null; // força erro no validator
+                    }
                 }
             }
 
-            /*
-            |-----------------------------------
-            | Criar/Atualizar gestante
-            |-----------------------------------
-            */
-            $gestante = Gestante::firstOrCreate(
-                ['gestante_id' => $data['gestante_id']]
-            );
+            $validator = Validator::make($linha, [
+                'data_consulta' => 'required|date',
+                'idade_gestacional' => 'required|integer',
+                'altura' => 'nullable|numeric',
+                'peso' => 'nullable|numeric',
+                'pressao_sistolica' => 'nullable|integer',
+                'diabetes_gestacional' => 'required|boolean',
+                'obesidade_pre_gestacional' => 'required|boolean',
+                'hipertensao' => 'required|boolean',
+                'hipertensao_pre_eclampsia' => 'required|boolean',
+                'historico_familiar_chd' => 'required|boolean',
+                'uso_medicamentos' => 'required|boolean',
+                'tabagismo' => 'required|boolean',
+                'alcoolismo' => 'required|boolean',
+                'bpm_materno' => 'nullable|integer',
+                'saturacao' => 'nullable|integer',
+                'temperatura_corporal' => 'nullable|numeric',
+                'glicemia_jejum' => 'nullable|numeric',
+                'glicemia_pos_prandial' => 'nullable|numeric',
+                'hba1c' => 'nullable|numeric',
+                'frequencia_cardiaca_fetal' => 'nullable|integer',
+                'circunferencia_cefalica_fetal_mm' => 'nullable|numeric',
+                'circunferencia_abdominal_mm' => 'nullable|numeric',
+                'comprimento_femur_mm' => 'nullable|numeric',
+                'translucencia_nucal_mm' => 'nullable|numeric',
+                'doppler_ducto_venoso' => 'nullable|string',
+                'eixo_cardiaco' => 'nullable|string',
+                'quatro_camaras' => 'nullable|string',
+                'chd_confirmada' => 'required|boolean',
+                'tipo_chd' => 'nullable|string'
+            ]);
 
-            if (!empty($data['data_nascimento'])) {
-                if (str_contains($data['data_nascimento'], '/')) {
-                    $gestante->data_nascimento = \Carbon\Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
-                } else {
-                    $gestante->data_nascimento = date('Y-m-d', strtotime($data['data_nascimento']));
-                }
-                $gestante->save();
+            if ($validator->fails()) {
+                $erros[] = $validator->errors();
+            } else {
+                $dados[] = $linha;
             }
-
-            /*
-            |-----------------------------------
-            | Criar consulta
-            |-----------------------------------
-            */
-            Consulta::updateOrCreate(
-
-                [
-                    'gestante_id' => $gestante->id,
-                    'consulta_numero' => $data['consulta_numero']
-                ],
-
-                [
-                    'data_consulta' => $data['data_consulta'] ?? null,
-
-                    'idade_gestacional' => $data['idade_gestacional'] ?? null,
-
-                    'pressao_sistolica' => $data['pressao_sistolica'] ?? null,
-                    'bpm_materno' => $data['bpm_materno'] ?? null,
-                    'saturacao' => $data['saturacao'] ?? null,
-                    'temperatura_corporal' => $data['temperatura_corporal'] ?? null,
-
-                    'altura' => $data['altura'] ?? null,
-
-                    'peso' => $data['peso'] ?? null,
-                    'peso_fetal' => $data['peso_fetal'] ?? null,
-                    'imc' => $data['imc'] ?? null,
-
-                    'diabetes_gestacional' => $data['diabetes_gestacional'] ?? 0,
-                    'obesidade_pre_gestacional' => $data['obesidade_pre_gestacional'] ?? 0,
-                    'hipertensao' => $data['hipertensao'] ?? 0,
-                    'hipertensao_pre_eclampsia' => $data['hipertensao_pre_eclampsia'] ?? 0,
-                    'historico_familiar_chd' => $data['historico_familiar_chd'] ?? 0,
-                    'uso_medicamentos' => $data['uso_medicamentos'] ?? 0,
-                    'tabagismo' => $data['tabagismo'] ?? 0,
-                    'alcoolismo' => $data['alcoolismo'] ?? 0,
-
-                    'frequencia_cardiaca_fetal' => $data['frequencia_cardiaca_fetal'] ?? null,
-
-                    'circunferencia_cefalica_fetal_mm' => $data['circunferencia_cefalica_fetal_mm'] ?? null,
-                    'circunferencia_abdominal_mm' => $data['circunferencia_abdominal_mm'] ?? null,
-                    'comprimento_femur_mm' => $data['comprimento_femur_mm'] ?? null,
-                    'translucencia_nucal_mm' => $data['translucencia_nucal_mm'] ?? null,
-
-                    'doppler_ducto_venoso' => $data['doppler_ducto_venoso'] ?? null,
-                    'eixo_cardiaco' => $data['eixo_cardiaco'] ?? null,
-                    'quatro_camaras' => $data['quatro_camaras'] ?? null,
-
-                    'total_fatores_risco' => $data['total_fatores_risco'] ?? null,
-                    'alteracao_estrutural' => $data['alteracao_estrutural'] ?? 0,
-                    'num_chd_codigos' => $data['num_chd_codigos'] ?? null,
-
-                    'chd_confirmada' => $data['chd_confirmada'] ?? 0,
-                    'tipo_chd' => $data['tipo_chd'] ?? null,
-                ]
-            );
         }
 
         fclose($handle);
 
-        DB::commit();
+        if (!empty($erros)) {
+            return response()->json([
+                'message' => 'Erro de validação nos dados.',
+                'error' => $erros
+            ], 422);
+        }
+
+        // 6. Enviar CSV para API Python
+        try {
+            $response = Http::attach(
+                'file',
+                file_get_contents($file->getRealPath()),
+                $file->getClientOriginalName()
+            )->post('http://127.0.0.1:5000/analisar');
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'message' => 'Erro na API Python'
+                ], 500);
+            }
+
+            $resultado = $response->json();
+            Log::info('Resposta da API Python', $resultado);
+            // dd($resultado);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erro de comunicação com API',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        // 7. Inserir no banco
+        Analise::updateOrCreate(
+            ['id' => 1], // sempre o mesmo registro
+            [
+                'estatistica_geral' => $resultado['tabelas']['estatistica_geral'],
+                'analise_risco' => $resultado['tabelas']['analise_risco'],
+                'comorbidades' => $resultado['tabelas']['comorbidades'],
+                'graficos' => $resultado['graficos'],
+                'ultima_atualizacao' => now()
+            ]
+        );
 
         return response()->json([
-            'message' => 'CSV importado com sucesso'
+            'message' => 'Importação realizada com sucesso!'
         ]);
-
-    } catch (\Throwable $e) {
-
-        DB::rollBack();
-
-        return response()->json([
-            'message' => 'Erro ao importar CSV',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
+
+
     public function create($id)
     {
         // 1. Encontrar a gestante pelo ID recebido na rota.

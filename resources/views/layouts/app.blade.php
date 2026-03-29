@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'Cardioprenatal')</title>
+    <title>@yield('title', 'CardioDiabet')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -17,7 +17,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 
             <h1 class="text-lg font-semibold text-blue-600">
-                Cardioprenatal
+                CardDiabet
             </h1>
 
             <!-- Botão mobile -->
@@ -70,7 +70,7 @@
 
     <footer class="bg-white border-t">
         <div class="max-w-7xl mx-auto px-4 py-4 text-sm text-center text-gray-500">
-            © {{ date('Y') }} Cardioprenatal
+            © {{ date('Y') }} CardioDiabet
         </div>
     </footer>
 

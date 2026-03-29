@@ -52,7 +52,7 @@
 
                 if (response.ok) {
                     // Redireciona para a lista de gestantes em caso de sucesso.
-                    window.location.href = "{{ route('gestantes.index') }}";
+                    window.location.href = "{{ route('dashboard') }}";
                 } else {
                     const data = await response.json();
                     feedbackDiv.innerText = (data.message || 'Ocorreu um erro.') + (data.error ? ' Detalhes: ' + data.error : '');

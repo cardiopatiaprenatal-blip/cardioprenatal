@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>@yield('title', 'Acesso | Cardioprenatal')</title>
+    <title>@yield('title', 'Acesso | CardioDiabet')</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/noty/lib/noty.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/noty/lib/themes/mint.css">
@@ -29,7 +29,7 @@
                 <!-- Logo / Título -->
                 <div class="mb-6 text-center">
                     <h1 class="text-xl sm:text-2xl font-bold text-blue-600">
-                        Cardioprenatal
+                        CardioDiabet
                     </h1>
                     <p class="text-sm text-gray-500 mt-1">
                         @yield('subtitle')

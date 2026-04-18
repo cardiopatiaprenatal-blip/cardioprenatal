@@ -1,5 +1,7 @@
 # CardioPrenatal / CardDiabet
 
+**Repositório Oficial:** [github.com/cardiopatiaprenatal-blip/cardioprenatal](https://github.com/cardiopatiaprenatal-blip/cardioprenatal)
+
 ## 📌 Sobre o Projeto
 O **CardioPrenatal** é uma plataforma especializada no acompanhamento de gestantes, com foco na análise de riscos cardiovasculares e comorbidades durante o período gestacional. O sistema centraliza dados de consultas, realiza análises estatísticas automáticas via Python e fornece insights visuais para auxiliar na tomada de decisão clínica.
 
@@ -55,7 +57,10 @@ O **CardioPrenatal** é uma plataforma especializada no acompanhamento de gestan
 - Python 3.x (com bibliotecas Pandas, Matplotlib/Seaborn)
 
 ### Instalação
-1. Clone o repositório.
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/cardiopatiaprenatal-blip/cardioprenatal.git
+   ```
 2. Instale as dependências do PHP:
    ```bash
    composer install

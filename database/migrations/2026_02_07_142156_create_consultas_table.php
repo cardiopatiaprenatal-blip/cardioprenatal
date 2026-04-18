@@ -20,7 +20,6 @@ return new class extends Migration
             $table->integer('consulta_numero');
             $table->date('data_consulta');
 
-            $table->integer('idade');
             $table->integer('idade_gestacional');
 
             $table->integer('pressao_sistolica');

@@ -23,6 +23,20 @@
         --bg:           #fdf5f5;
     }
 
+    /* Suporte ao padrão de cor do sistema (Modo Escuro) */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg:           #121212;
+            --surface:      #1e1e1e;
+            --text:         #e0e0e0;
+            --muted:        #a0a0a0;
+            --border:       #333333;
+            --accent-light: #2c0b0e;
+        }
+        .field-input { background-color: #262626; color: white; }
+        .login-card { box-shadow: 0 16px 48px rgba(0,0,0,.5); }
+    }
+
     body {
         font-family: 'DM Sans', sans-serif;
         background: var(--bg);
@@ -206,6 +220,16 @@
             <span class="btn-spinner"></span>
             <span class="btn-label">Entrar</span>
         </button>
+
+        <!-- Link para Registro -->
+        <div style="text-align: center; margin-top: 24px;">
+            <p style="color: var(--muted); font-size: 14px;">
+                {{ __("Don't have an account?") }} 
+                <a href="{{ route('register') }}" style="color: var(--accent); font-weight: 600; text-decoration: none; transition: color 0.2s;">
+                    {{ __("Register") }}
+                </a>
+            </p>
+        </div>
     </form>
 </div>
 
@@ -233,7 +257,7 @@
 
         const formData = new FormData(this);
 
-        fetch('/login', {
+        fetch('{{ route('login') }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -242,8 +266,10 @@
             body: formData
         })
         .then(async response => {
-            const data = await response.json();
-            if (!response.ok) throw data;
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await response.json() : null;
+
+            if (!response.ok) throw data || { message: `Erro no servidor (${response.status})` };
 
             new Noty({
                 type: 'success',
@@ -258,7 +284,7 @@
             submitBtn.classList.remove('loading');
             submitBtn.disabled = false;
 
-            let msg = error.message || 'Erro ao tentar login';
+            let msg = error.error || error.message || 'Erro inesperado ao tentar login';
             if (error.errors) msg = Object.values(error.errors).flat()[0];
 
             new Noty({

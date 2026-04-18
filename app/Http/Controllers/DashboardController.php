@@ -5,9 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Analise;
 use App\Models\Consulta;
 use App\Models\Gestante;
-use Illuminate\Http\Request;
-use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class DashboardController extends Controller
 {

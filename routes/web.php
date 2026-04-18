@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnaliseController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\DashboardController;
@@ -14,9 +15,10 @@ Route::get('/', function () {
     }
 
     return view('auth.login');
-})->name('login');
+});
 
 
+Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('auth');
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -26,6 +28,11 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    // Rotas de Análise (IA) via Job para evitar timeout
+    Route::post('/dashboard/analisar', [AnaliseController::class, 'iniciarAnalise'])->name('dashboard.analisar');
+    Route::get('/dashboard/verificar-analise', [AnaliseController::class, 'verificarStatus'])->name('dashboard.verificarAnalise');
+    Route::get('/dashboard/resultado-analise', [AnaliseController::class, 'obterResultado'])->name('dashboard.resultadoAnalise');
+
     Route::resource('gestantes', GestanteController::class);
 
     // Rotas de Consulta
@@ -34,3 +41,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/consultas/create/{id}', [ConsultaController::class, 'create'])->name('consultas.create');
     Route::post('/consultas/{id}', [ConsultaController::class, 'store'])->name('consultas.store');
 });
+
+Route::get('/register', [AuthController::class, 'registerIndex'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);

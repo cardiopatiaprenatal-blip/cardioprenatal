@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Analise;
 use App\Models\Consulta;
 use App\Models\Gestante;
@@ -63,10 +62,10 @@ class ConsultaController extends Controller
         $validatedData['consulta_numero'] = ($ultimoNumero ?? 0) + 1;
 
         // 3. Criar a consulta usando atribuição em massa
-        Consulta::create($validatedData);
+        $consulta = Consulta::create($validatedData);
 
         // 4. Redirecionar para a página de detalhes da gestante
-        return redirect()->route('gestantes.show', $id)->with('success', 'Consulta salva com sucesso!');
+        return redirect()->route('gestantes.show', $id)->with('success', 'Consulta cadastrada com sucesso!');
     }
 
     // STORE VIA PREENCHIMENTO MANUAL
@@ -85,7 +84,7 @@ class ConsultaController extends Controller
     public function import(Request $request)
     {
         if (!$request->hasFile('csv')) {
-            return response()->json(['message' => 'Nenhum arquivo CSV enviado.'], 400);
+            return redirect()->back()->with('error', 'Nenhum arquivo CSV foi enviado.');
         }
 
         return $this->importStore($request);
@@ -101,6 +100,10 @@ class ConsultaController extends Controller
 
     public function importStore(Request $request)
     {
+        // Define o tempo limite para 5 minutos (300 segundos) para esta requisição,
+        // permitindo que o processamento do CSV e a chamada da API de IA terminem.
+        set_time_limit(300);
+
         // 1. Validar upload
         $request->validate([
             'csv' => 'required|file|mimes:csv,txt'
@@ -166,9 +169,11 @@ class ConsultaController extends Controller
 
         $dados = [];
         $erros = [];
+        $numeroLinha = 1; // Row 1 is the header
 
         // 5. Validar linha a linha
         while (($row = fgetcsv($handle)) !== false) {
+            $numeroLinha++;
             if (count($header) !== count($row)) {
                 $erros[] = [
                     'linha_csv' => $numeroLinha ?? null,
@@ -255,42 +260,13 @@ class ConsultaController extends Controller
             ], 422);
         }
 
-        // 6. Enviar CSV para API Python
-        try {
-            $response = Http::attach(
-                'file',
-                file_get_contents($file->getRealPath()),
-                $file->getClientOriginalName()
-            )->post('http://127.0.0.1:5000/analisar');
-
-            if (!$response->successful()) {
-                return response()->json([
-                    'message' => 'Erro na API Python'
-                ], 500);
-            }
-
-            $resultado = $response->json();
-            Log::info('Resposta da API Python', $resultado);
-            // dd($resultado);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro de comunicação com API',
-                'error' => $e->getMessage()
-            ], 500);
+        // 6. Inserir as consultas no banco de dados
+        foreach ($dados as $item) {
+            Consulta::create($item);
         }
 
-        // 7. Inserir no banco
-        Analise::updateOrCreate(
-            ['id' => 1], // sempre o mesmo registro
-            [
-                'estatistica_geral' => $resultado['tabelas']['estatistica_geral'],
-                'analise_risco' => $resultado['tabelas']['analise_risco'],
-                'comorbidades' => $resultado['tabelas']['comorbidades'],
-                'graficos' => $resultado['graficos'],
-                'ultima_atualizacao' => now()
-            ]
-        );
-
+        // O processamento da IA agora deve ser disparado pelo botão "Analisar" 
+        // na Dashboard para evitar timeouts durante o upload.
         return response()->json([
             'message' => 'Importação realizada com sucesso!'
         ]);
@@ -305,18 +281,6 @@ class ConsultaController extends Controller
 
         // 2. Passar o objeto 'gestante' para a view.
         return view('consultas.create', compact('gestante'));
-    }
-
-    public function show($id)
-    {
-        // Lógica para mostrar uma consulta específica
-    }
-
-    public function edit($id)
-    {
-        $consulta = Consulta::findOrFail($id);
-
-        return view('consultas.edit', compact('consulta'));
     }
 
     public function update(Request $request, $id)
@@ -359,12 +323,6 @@ class ConsultaController extends Controller
 
         $consulta->update($validatedData);
 
-        return redirect()
-            ->route('gestantes.show', $consulta->gestante_id)
-            ->with('success', 'Consulta atualizada com sucesso!');
-    }
-    public function destroy($id)
-    {
-        // Lógica para excluir uma consulta
+        return redirect()->route('gestantes.show', $consulta->gestante_id)->with('success', 'Consulta atualizada com sucesso!');
     }
 }

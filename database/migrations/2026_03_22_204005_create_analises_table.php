@@ -18,6 +18,11 @@ return new class extends Migration
             $table->json('estatistica_geral')->nullable();
             $table->json('analise_risco')->nullable();
             $table->json('comorbidades')->nullable();
+            $table->json('odds_ratio_data')->nullable();
+            $table->json('fetal_summary')->nullable();
+            
+            // Armazena o JSON completo para segurança e flexibilidade
+            $table->json('full_response')->nullable();
 
             // opcional
             $table->json('graficos')->nullable();
